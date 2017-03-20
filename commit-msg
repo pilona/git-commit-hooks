@@ -60,6 +60,11 @@ NR == 2 {
     err("Trailing whitespace in commit message.")
 }
 
+!length_once && length($0) > 75 {
+    length_once = 1
+    warn("Lines longer than 75 characters.")
+}
+
 END {
     if (bad) {
         totty("")
