@@ -1,0 +1,75 @@
+#! /bin/sh
+
+exec awk -f - "$1" <<-'AWK'
+# Print message to stderr
+function warn(msg) {
+    print msg >"/dev/stderr"
+}
+
+# Warn, and mark commit message as bad; requiring amending.
+function err(msg) {
+    bad = 1
+    warn(msg)
+}
+
+# Print to tty directly, so it doesn't pollute the stdout or stderr that you
+# would want to redirect to something meaningful that is not /dev/null.
+function totty(msg) {
+    print msg >"/dev/tty"
+}
+
+NR == 1 {
+    if ($0 ~ /^-/)
+        err("Subject line starts with a dash.")
+    if ($0 !~ /\.$/)
+        err("Subject line sentence doesn't end with a period.")
+    if ($0 !~ /^[[:upper:]]/)
+        warn("Subject line doesn't first word not capitalized.")
+    if ($0 ~ /\. [^[:space:]]/)
+        warn("Multiple sentences in subject line?")
+    if (tolower($0) ~ /^(fixes|closes)[[:space:]]*#?[[:digit:]]+/)
+        warn("GitHub fixes/closes as subject line;" \
+             " add proper subject/body and put tag at end in separate paragraph.")
+    if ($0 ~ /- .* - /)
+        warn("Multiple bullet list lines in subject line!?")
+    if ($1 ~ /ing$/)
+        warn("Verb at beginning of line in infinitive;" \
+             " should be present active voice.")
+    if ($1 ~ /ed$/)
+        warn("Verb at beginning of line in past tense;" \
+             " should be present active voice.")
+        if (tolower($0) ~ /fixup/)
+        warn("\"fixup\" commit; should rebase interactive.")
+}
+
+NR == 2 {
+    if ($0 != "")
+        err("Non-blank second line;" \
+            " should be a delimiter between subject and paragraph.")
+    if ($0 ~ /^-/) {
+        warn("Bullet list subject line;" \
+             " potentially many ideas in single commit?")
+        totty("See:")
+        totty("\t" "https://en.wikipedia.org/wiki/Atomic_commit#Revision_control")
+        totty("\t" "https://www.git-tower.com/learn/git/ebook/en/command-line/appendix/best-practices")
+        totty("\t" "https://www.git-tower.com/learn/git/ebook/en/command-line/appendix/best-practices")
+    }
+}
+
+/[[:space:]]+$/ {
+    err("Trailing whitespace in commit message.")
+}
+
+END {
+    if (bad) {
+        totty("")
+        totty("Style problems prevented commit.")
+        totty("")
+        totty("See:")
+        totty("\t" "https://chris.beams.io/posts/git-commit/")
+        totty("\t" "http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html")
+
+        exit 1
+    }
+}
+AWK
