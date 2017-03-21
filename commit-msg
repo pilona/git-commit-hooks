@@ -24,7 +24,7 @@ NR == 1 {
     if ($0 !~ /\.$/)
         err("Subject line sentence doesn't end with a period.")
     if ($0 !~ /^[[:upper:]]/)
-        warn("Subject line doesn't first word not capitalized.")
+        warn("Subject line first word not capitalized.")
     if ($0 ~ /\. [^[:space:]]/)
         warn("Multiple sentences in subject line?")
     if (tolower($0) ~ /^(fixes|closes)[[:space:]]*#?[[:digit:]]+/)
