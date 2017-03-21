@@ -3,7 +3,7 @@
 exec awk -f - "$1" <<-'AWK'
 # Print message to stderr
 function warn(msg) {
-    print msg >"/dev/stderr"
+    print "- " msg >"/dev/stderr"
 }
 
 # Warn, and mark commit message as bad; requiring amending.
