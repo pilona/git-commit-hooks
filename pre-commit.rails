@@ -1,0 +1,88 @@
+#! /bin/sh
+
+set -e
+
+
+err() {
+    exec 1>&2
+    for line in "$@"; do
+        printf '%s\n' "$line"  # printf for unsafe strings! echo flags boo!
+    done
+    echo 'If this is absolutely necessary, use --no-verify.'
+    exit 1
+}
+
+
+structure_status() {
+    local status
+    # read group a dirty trick because echo foo | read bar doesn't work, but
+    # echo foo | { read bar; } does.
+    read -r status _ <<-EOF
+$(git status --porcelain -- db/structure.sql)
+EOF
+    printf '%s\n' "$status"
+}
+
+
+ensure_structuresql_status() {
+    case "$(structure_status)" in
+        [DRC]|'??')
+            err "Uuunh, why isn't db/structure.sql there?"
+            ;;
+        ??)
+            err "Different structure.sql in working tree and index!"
+            ;;
+    esac
+}
+
+
+# Assumes that people don't leave uncommitted migrations in their working tree,
+# while working on other things.
+ensure_migrations_status() {
+    local structure_status="$(structure_status)"
+    git status --porcelain -- db/migrate | {
+        local migration_count=0
+        while read -r status file; do
+            migration_count=$((migration_count + 1))
+            case "$status" in
+                [MDR])
+                    err "$file: You really shouldn't modify a migration!"
+                    ;;
+                C)
+                    err "$file: Uuunh, what's the use of a copied migration!?"
+                    ;;
+                A)
+                    case "$structure_status" in
+                        [MA])
+                            true
+                            ;;
+                        *)
+                            err "$file: Staged migration file but not db/structure.sql!"
+                            ;;
+                     esac
+                     ;;
+                ??)
+                    err "$file: Uuunh, unstaged or different migration in working tree and index!"
+                    ;;
+                *)
+                    err "$file: Unhandled status '$status'."
+                    ;;
+            esac
+        done
+
+        if [ "$migration_count" = 0 ]; then
+            case "$structure_status" in
+                [MA])
+                    err "structure.sql changes without an accompanying migration!"
+                    ;;
+            esac
+        elif [ "$migration_count" -gt 1 ]; then
+            err 'Multiple migrations per commit.' \
+                'Merge or make separate commits for separate ideas.'
+        fi
+    }
+}
+
+
+ensure_structuresql_status
+ensure_migrations_status
