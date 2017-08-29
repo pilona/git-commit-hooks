@@ -50,8 +50,8 @@ NR == 2 {
         err("Non-blank second line;" \
             " should be a delimiter between subject and paragraph.")
     if ($0 ~ /^-/) {
-        warn("Bullet list subject line;" \
-             " potentially many ideas in single commit?")
+        err("Bullet list subject line;" \
+            " potentially many ideas in single commit?")
         totty("See:")
         totty("\t" "https://en.wikipedia.org/wiki/Atomic_commit#Revision_control")
         totty("\t" "https://www.git-tower.com/learn/git/ebook/en/command-line/appendix/best-practices")
