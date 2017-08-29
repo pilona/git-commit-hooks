@@ -25,8 +25,6 @@ NR == 1 {
 
     if ($0 ~ /^-/)
         err("Subject line starts with a dash.")
-    if ($0 !~ /\.$/)
-        err("Subject line sentence doesn't end with a period.")
     if ($0 !~ /^[[:upper:]]/)
         warn("Subject line first word not capitalized.")
     if ($0 ~ /\. [^[:space:]]/)
@@ -42,6 +40,9 @@ NR == 1 {
     if ($1 ~ /ed$/)
         warn("Verb at beginning of line in past tense;" \
              " should be present active voice.")
+    if ($1 ~ /\.$/)
+        err("Subject line ends with a period;" \
+            " should not for nicer quoting.")
 }
 
 NR == 2 {
