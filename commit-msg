@@ -19,6 +19,10 @@ function totty(msg) {
 }
 
 NR == 1 {
+    if (tolower($0) ~ /fixup/) {
+        warn("\"fixup\" commit; should rebase interactive.")
+    }
+
     if ($0 ~ /^-/)
         err("Subject line starts with a dash.")
     if ($0 !~ /\.$/)
@@ -38,8 +42,6 @@ NR == 1 {
     if ($1 ~ /ed$/)
         warn("Verb at beginning of line in past tense;" \
              " should be present active voice.")
-        if (tolower($0) ~ /fixup/)
-        warn("\"fixup\" commit; should rebase interactive.")
 }
 
 NR == 2 {
